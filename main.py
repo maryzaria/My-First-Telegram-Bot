@@ -38,14 +38,13 @@ def start(message):
     item2 = types.KeyboardButton('Все задачи')
     item3 = types.KeyboardButton('Дела на сегодня')
     item4 = types.KeyboardButton('Добавить задачу')
-    item5 = types.KeyboardButton('Список покупок')
+    item5 = types.KeyboardButton('Составить cписок покупок')
     markup.add(item1, item2, item3, item4, item5)
     bot.send_message(message.chat.id, f'Привет, {message.chat.first_name}', reply_markup=markup)
 
 
 @bot.message_handler(commands=['add'])
 def add(message):
-    print(message.chat)
     dt, task = valid_date(message.text), message_to_task(message.text.strip('/add'))
     if 'попробуйте еще раз' in dt:
         bot.send_message(message.chat.id, dt)
@@ -66,14 +65,15 @@ def show(message):
         bot.send_message(message.chat.id, 'укажите, на какую дату показать список задач')
 
 
-@bot.message_handler(func=lambda m: m.text in ('Список покупок', 'Дела на сегодня', 'Все задачи', 'Добавить задачу'))
+@bot.message_handler(func=lambda m: m.text in ('Составить cписок покупок', 'Дела на сегодня', 'Все задачи', 'Добавить задачу'))
 def bot_message(message):
     if message.chat.type == 'private':
-        if message.text == 'Список покупок':
-            bot.send_message(message.chat.id, 'напишите команду /shop и список покупок')
+        if message.text == 'Составить cписок покупок':
+            bot.send_message(message.chat.id, 'напишите список продуктов')
+            bot.register_next_step_handler(message, shop)
         if message.text == 'Добавить задачу':
-            bot.send_message(message.chat.id, 'напишите команду /add задачу и дату, когда ее нужно выполнить')
-
+            bot.send_message(message.chat.id, 'напишите задачу и дату, когда ее надо выполнить')
+            bot.register_next_step_handler(message, add)
         if message.text == 'Дела на сегодня':
             tasks_today(message)
         if message.text == 'Все задачи':
@@ -122,7 +122,7 @@ def move(message):
 
 @bot.message_handler(commands=['shop'])
 def shop(message):  # types.Message
-    items = message.text.split(', ')[1:] if ',' in message.text else message.text.split()[1:]
+    items = message.text.strip('/shop').split(",") if ',' in message.text else message.text.strip('/shop').split()
     item_list.clear()
     item_list.extend(items)
     bot.send_message(message.chat.id, 'Список покупок', reply_markup=make_buttons(items))
@@ -141,7 +141,7 @@ def tasks_today(message):
 def answer(call):  # : types.callback_query
     if call.message.text == 'Список покупок':
         replay = new_items(call.data, item_list)
-        if len(item_list) != 0 and len(tuple(filter(lambda x: 'взяли' in x, item_list))) == len(item_list):
+        if len(item_list) != 0 and len(tuple(filter(lambda x: '✅' in x, item_list))) == len(item_list):
             bot.answer_callback_query(call.id, text='Вы завершили покупку', show_alert=True)
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text='Покупка завершена')
             return

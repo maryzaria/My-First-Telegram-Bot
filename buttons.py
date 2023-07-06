@@ -11,13 +11,13 @@ def make_buttons(data: list):
 
 def new_items(data, items):
     for index, item in enumerate(items):
-        if 'взяли' in data and item == data:
-            old_item = ' '.join(data.split()[:-1]).strip('✅')
+        if '✅' in data and item == data:
+            old_item = data.strip('✅')
             items.remove(item)
             items.insert(index, old_item)
         elif item == data:
             items.remove(item)
-            items.insert(index, f'✅ {data} взяли')
+            items.insert(index, f'✅ {data}')
     return make_buttons(items)
 
 
