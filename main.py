@@ -34,12 +34,11 @@ def print_help(message):
 @bot.message_handler(commands=['start'])
 def start(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    item1 = types.KeyboardButton('/help')
     item2 = types.KeyboardButton('Все задачи')
     item3 = types.KeyboardButton('Дела на сегодня')
     item4 = types.KeyboardButton('Добавить задачу')
     item5 = types.KeyboardButton('Составить cписок покупок')
-    markup.add(item1, item2, item3, item4, item5)
+    markup.add(item2, item3, item4, item5)
     bot.send_message(message.chat.id, f'Привет, {message.chat.first_name}', reply_markup=markup)
 
 

@@ -11,7 +11,6 @@ def valid_date(text):
         return date.strftime(datetime.today() + timedelta(days=2), '%d.%m.%Y')
 
     find_date = [re.sub(r'[,/-]', '.', day) for day in re.findall(r'\d{1,2}.\d{1,2}.?\d{0,4}', text)]
-    print(find_date)
     for pattern in (r'%d.%m.%y', r'%d.%m.%Y'):
         try:
             return date.strftime(datetime.strptime(find_date[0].strip(), pattern), '%d.%m.%Y')
