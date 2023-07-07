@@ -1,4 +1,5 @@
 import os
+import sqlite3
 from dotenv import load_dotenv
 from telebot import TeleBot, types
 
@@ -31,8 +32,49 @@ def print_help(message):
     bot.send_message(message.chat.id, '\n'.join([f"{key} - {val}" for key, val in text.items()]))
 
 
+def create_db():
+    conn = sqlite3.connect('user_db.sql')
+    cur = conn.cursor()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS user (
+        chat_id INTEGER PRIMARY KEY,
+        username VARCHAR(40) UNIQUE,
+        first_name VARCHAR(40) NOT NULL,
+        last_name VARCHAR(40) NOT NULL
+    );
+    """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS task (
+        id INTEGER PRIMARY KEY,
+        content VARCHAR(200) NOT NULL,
+        date VARCHAR(15) NOT NULL, 
+        user_id INTEGER REFERENCES user(user_id)
+    );
+    """)
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def insert_task_db(message):
+    conn = sqlite3.connect('user_db.sql')
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO user (chat_id, username, first_name, last_name VALUES (?, ?, ?, ?);
+        """, (message.chat.id, message.chat.username, message.chat.first_name, message.chat.last_name))
+    cur.execute("""
+    INSERT INTO task (content, date, chat_id INTEGER REFERENCES user(user_id)
+        );
+        """)
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
 @bot.message_handler(commands=['start'])
 def start(message):
+    print(message.chat)
+    create_db()
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item2 = types.KeyboardButton('Все задачи')
     item3 = types.KeyboardButton('Дела на сегодня')
@@ -44,6 +86,7 @@ def start(message):
 
 @bot.message_handler(commands=['add'])
 def add(message):
+    create_db()
     dt, task = valid_date(message.text), message_to_task(message.text.strip('/add'))
     if 'попробуйте еще раз' in dt:
         bot.send_message(message.chat.id, dt)
@@ -161,6 +204,7 @@ def answer(call):  # : types.callback_query
 if __name__ == '__main__':
     # постоянно обращается к серверам телеграм
     bot.polling(none_stop=True)
+
 
 
 

@@ -3,12 +3,12 @@ import re
 
 
 def valid_date(text):
-    if 'сегодня' in text.lower():
-        return date.strftime(date.today(), '%d.%m.%Y')
+    if 'послезавтра' in text.lower():
+        return date.strftime(datetime.today() + timedelta(days=2), '%d.%m.%Y')
     elif 'завтра' in text.lower():
         return date.strftime(datetime.today() + timedelta(days=1), '%d.%m.%Y')
-    elif 'послезавтра' in text.lower():
-        return date.strftime(datetime.today() + timedelta(days=2), '%d.%m.%Y')
+    elif 'сегодня' in text.lower():
+        return date.strftime(date.today(), '%d.%m.%Y')
 
     find_date = [re.sub(r'[,/-]', '.', day) for day in re.findall(r'\d{1,2}.\d{1,2}.?\d{0,4}', text)]
     for pattern in (r'%d.%m.%y', r'%d.%m.%Y'):
