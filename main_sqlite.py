@@ -1,6 +1,7 @@
 import os
 
 from dotenv import load_dotenv
+from datetime import datetime, date, timedelta
 from telebot import TeleBot, types
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 
@@ -12,9 +13,10 @@ load_dotenv()
 token = os.getenv('TOKEN')
 
 bot = TeleBot(token)
+today = date.strftime(date.today(), '%d.%m.%Y')
 
 command_messages = ('Все задачи', 'Дела на сегодня', 'Добавить задачу',
-                    'Составить cписок покупок')  # 'Переместить задачу', 'Удалить задачу'
+                    'Удалить задачу', 'Составить cписок покупок')  # 'Переместить задачу',
 
 
 @bot.message_handler(commands=['help'])
@@ -35,8 +37,6 @@ def print_help(message):
 def start(message):
     create_db(message)
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    # for command in command_messages:
-    #     markup.add(types.KeyboardButton(command))
     item1 = types.KeyboardButton('Все задачи')
     item2 = types.KeyboardButton('Дела на сегодня')
     item3 = types.KeyboardButton('Добавить задачу')
@@ -50,7 +50,7 @@ def start(message):
 def add(message):
     create_db(message)
     dt, task = valid_date(message.text), message_to_task(message.text.strip('/add'))
-    if 'попробуйте еще раз' in dt:
+    if 'вместе с задачей' in dt:
         bot.send_message(message.chat.id, dt)
         bot.register_next_step_handler(message, add)
     else:
@@ -75,7 +75,7 @@ def show(message):
 def bot_message(message):
     if message.chat.type == 'private':
         if message.text == 'Составить cписок покупок':
-            bot.send_message(message.chat.id, 'напишите список продуктов')
+            bot.send_message(message.chat.id, 'напишите список')
             bot.register_next_step_handler(message, shop)
         if message.text == 'Добавить задачу':
             bot.send_message(message.chat.id, 'напишите задачу и дату, когда ее надо выполнить')
@@ -92,12 +92,15 @@ def bot_message(message):
 @bot.message_handler(commands=['all'])
 def show_all(message):
     tasks = {}
-    for date, task in sorted(select_all(message)):
-        tasks.setdefault(date, []).append(task)
+    for dt, task in sorted(select_all(message), key=lambda x: datetime.strptime(x[0], '%d.%m.%Y')):
+        if datetime.strptime(dt, '%d.%m.%Y') < datetime.today() - timedelta(days=1):
+            delete_task(message, task)
+        else:
+            tasks.setdefault(dt, []).append(task)
     if not tasks:
         text = 'Нет предстоящих задач'
     else:
-        text = '\n\n'.join([str(day) + ':\n' + '\n'.join([f"🔹{d}" for d in tasks[day]]) for day in tasks])
+        text = '\n\n'.join([day + ':\n' + '\n'.join([f"🔹{d}" for d in tasks[day]]) for day in tasks])
     bot.send_message(message.chat.id, text)
 
 
@@ -135,7 +138,8 @@ def make_buttons(data: list):
 
 @bot.message_handler(commands=['shop'])
 def shop(message):  # types.Message
-    items = message.text.strip('/shop').split(",") if ',' in message.text else message.text.strip('/shop').split()
+    items = message.text.strip('/shop').strip(' ,.!-?/*').split(", ") if ',' in message.text \
+        else message.text.strip('/shop').strip(' ,.!-?/*').split()
     create_db(message, shop=True)
     for item in items:
         insert_task_db(message, shop=True, item_name=item)
@@ -144,10 +148,9 @@ def shop(message):  # types.Message
 
 @bot.message_handler(commands=['today'])
 def tasks_today(message):
-    today = valid_date('сегодня')
     tasks_today = [task[0] for task in select_today(message, today)]
     if tasks_today:
-        bot.send_message(message.chat.id, 'Список дел на сегодня', reply_markup=make_buttons(tasks_today))
+        bot.send_message(message.chat.id, 'Список дел на сегодня:', reply_markup=make_buttons(tasks_today))
     else:
         bot.send_message(message.chat.id, 'На сегодня дел нет, отдыхайте 😉')
 
@@ -161,12 +164,12 @@ def answer(call):  # : types.callback_query
         if len(item_list) != 0 and len(tuple(filter(lambda x: '✅' in x, item_list))) == len(item_list):
             bot.answer_callback_query(call.id, text='Вы завершили покупку', show_alert=True)
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text='Покупка завершена')
+            delete_items(call.message, item_list)
             return
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text='Список покупок',
                               reply_markup=replay, parse_mode='MarkdownV2')
 
-    elif call.message.text == 'Список дел на сегодня':
-        today = valid_date('сегодня')
+    elif call.message.text == 'Список дел на сегодня:':
         update_tasks(call.message, call.data, today)
         today_tasks = [task[0] for task in select_today(call.message, today)]
         replay = make_buttons(today_tasks)
@@ -174,7 +177,7 @@ def answer(call):  # : types.callback_query
             bot.answer_callback_query(call.id, text='Вы выполнили все дела на сегодня', show_alert=True)
             bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text='Список дел завершен')
             return
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text='Список дел на сегодня',
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text='Список дел на сегодня:',
                               reply_markup=replay, parse_mode='MarkdownV2')
 
 

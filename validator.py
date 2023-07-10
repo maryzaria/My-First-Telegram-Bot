@@ -2,6 +2,30 @@ from datetime import date, datetime, timedelta
 import re
 
 
+def new_valid_date(text):
+    if 'послезавтра' in text.lower():
+        return date.today() + timedelta(days=2)
+    elif 'завтра' in text.lower():
+        return date.today() + timedelta(days=1)
+    elif 'сегодня' in text.lower():
+        return date.today()
+
+    find_date = [re.sub(r'[,/-]', '.', day) for day in re.findall(r'\d{0,4}.\d{1,2}.?\d{1,2}', text)]
+    for pattern in (r'%d.%m.%y', r'%d.%m.%Y'):
+        try:
+            dt = datetime.strptime(find_date[0].strip(), pattern)
+            return date(day=dt.day, month=dt.month, year=dt.year)
+        except ValueError:
+            continue
+        except IndexError:
+            return 'вместе с задачей необходимо указать дату, когда нужно ее выполнить, попробуйте еще раз'
+    try:
+        dt = datetime.strptime(find_date[0].strip(), r'%d.%m')
+        return date(day=dt.day, month=dt.month, year=2023)
+    except (ValueError, IndexError):
+        return 'вместе с задачей необходимо указать дату, когда нужно ее выполнить, попробуйте еще раз'
+
+
 def valid_date(text):
     if 'послезавтра' in text.lower():
         return date.strftime(datetime.today() + timedelta(days=2), '%d.%m.%Y')

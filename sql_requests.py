@@ -135,11 +135,27 @@ def update_tasks(message, task, date=None, shop=False):
 def delete_task(message, task):
     conn = sqlite3.connect('user_db.sql')
     cur = conn.cursor()
-    cur.execute("""
-    DELETE FROM task WHERE content = ? AND chat_id = ?;
-    """, (task, message.chat.id))
-    tasks = cur.fetchall()
+    if isinstance(task, str):
+        cur.execute("""
+        DELETE FROM task WHERE content = ? AND chat_id = ?;
+        """, (task, message.chat.id))
+    elif isinstance(task, (list, tuple)):
+        for t in task:
+            cur.execute("""
+            DELETE FROM task WHERE content = ? AND chat_id = ?;
+            """, (t, message.chat.id))
     conn.commit()
     cur.close()
     conn.close()
-    return tasks
+
+
+def delete_items(message, items):
+    conn = sqlite3.connect('user_db.sql')
+    cur = conn.cursor()
+    for item in items:
+        cur.execute("""
+        DELETE FROM shop WHERE item_name = ? AND chat_id = ?;
+        """, (item, message.chat.id))
+    conn.commit()
+    cur.close()
+    conn.close()

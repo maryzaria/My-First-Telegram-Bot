@@ -1,6 +1,7 @@
-.env
+*.env
 __pycache__/
 .idea/
 my_try.py
 class_bot.py
 MakeToDoList.py
+test.py
