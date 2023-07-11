@@ -18,8 +18,8 @@ def create_db(message, shop=True):
         id INTEGER PRIMARY KEY,
         chat_id INTEGER UNIQUE NOT NULL,
         username VARCHAR(100),
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL
+        first_name VARCHAR(100),
+        last_name VARCHAR(100)
     );
     """)
     cur.execute("""
