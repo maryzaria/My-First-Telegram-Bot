@@ -1,3 +1,2 @@
-dotenv==0.0.5
-datetime==5.1
+python-dotenv==1.0.0
 telebot==0.0.5
