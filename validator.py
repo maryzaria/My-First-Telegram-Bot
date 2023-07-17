@@ -18,7 +18,7 @@ def new_valid_date(text):
         except ValueError:
             continue
         except IndexError:
-            return 'вместе с задачей необходимо указать дату, когда нужно ее выполнить, попробуйте еще раз'
+            return 'вместе с задачей необходимо указать дату, когда нужно ее выполнить, попробуйте указать дату в формате дд.мм.гггг'
     try:
         dt = datetime.strptime(find_date[0].strip(), r'%d.%m')
         return date(day=dt.day, month=dt.month, year=2023)
