@@ -13,7 +13,6 @@ load_dotenv()
 token = os.getenv('TOKEN')
 
 bot = TeleBot(token)
-today = date.strftime(date.today(), '%d.%m.%Y')
 
 command_messages = ('Все задачи', 'Дела на сегодня', 'Добавить задачу',
                     'Удалить задачу', 'Составить cписок покупок')  # 'Переместить задачу',
@@ -55,7 +54,7 @@ def add(message):
     if 'вместе с задачей' in dt:
         global n
         n += 1
-        if n < 3:
+        if n <= 2:
             bot.send_message(message.chat.id, dt)
             bot.register_next_step_handler(message, add)
         else:
@@ -71,13 +70,13 @@ def add(message):
 @bot.message_handler(commands=['show'])
 def show(message):
     try:
-        date = valid_date(message.text.split()[1].lower())
+        dt = valid_date(message.text.split()[1].lower())
         text = 'На эту дату нет задач'
-        res = [task[0] for task in select_today(message, date)]
+        res = [task[0] for task in select_today(message, dt)]
         if res:
             text = '\n'.join([f"🔹{v}" for v in res])
         bot.send_message(message.chat.id, text)
-    except:
+    except Exception:
         bot.send_message(message.chat.id, 'Укажите на какую дату показать список задач')
 
 
@@ -91,7 +90,7 @@ def bot_message(message):
             bot.send_message(message.chat.id, 'напишите задачу и дату, когда ее надо выполнить')
             bot.register_next_step_handler(message, add)
         if message.text == 'Дела на сегодня':
-            tasks_today(message)
+            today(message)
         if message.text == 'Все задачи':
             show_all(message)
         if message.text == 'Удалить задачу':
@@ -120,7 +119,7 @@ def remove(message):
     try:
         delete_task(message, task)
         text = f'Задача "{task}" удалена'
-    except:
+    except Exception:
         text = f'Задача "{task}" не найдена'
 
     bot.send_message(message.chat.id, text)
@@ -128,12 +127,12 @@ def remove(message):
 
 @bot.message_handler(commands=['move'])
 def move(message):
-    task, date = message_to_task(message.text.stpip('/move')), valid_date(message.text)
+    task, dt = message_to_task(message.text.stpip('/move')), valid_date(message.text)
     try:
         delete_task(message, task)
-        insert_task_db(message, task=task, date=date)
-        text = f'Задача "{task}" перемещена на {date}'
-    except:
+        insert_task_db(message, task=task, date=dt)
+        text = f'Задача "{task}" перемещена на {dt}'
+    except Exception:
         text = f'Задача "{task}" не найдена'
     bot.send_message(message.chat.id, text)
 
@@ -157,8 +156,8 @@ def shop(message):  # types.Message
 
 
 @bot.message_handler(commands=['today'])
-def tasks_today(message):
-    tasks_today = [task[0] for task in select_today(message, today)]
+def today(message):
+    tasks_today = [task[0] for task in select_today(message, date.strftime(date.today(), '%d.%m.%Y'))]
     if tasks_today:
         bot.send_message(message.chat.id, 'Список дел на сегодня:', reply_markup=make_buttons(tasks_today))
     else:
@@ -180,8 +179,9 @@ def answer(call):  # : types.callback_query
                               reply_markup=replay, parse_mode='MarkdownV2')
 
     elif call.message.text == 'Список дел на сегодня:':
-        update_tasks(call.message, call.data, today)
-        today_tasks = [task[0] for task in select_today(call.message, today)]
+        istoday = date.strftime(date.today(), '%d.%m.%Y')
+        update_tasks(call.message, call.data, istoday)
+        today_tasks = [task[0] for task in select_today(call.message, istoday)]
         replay = make_buttons(today_tasks)
         if len(today_tasks) != 0 and len(tuple(filter(lambda x: '✅' in x, today_tasks))) == len(today_tasks):
             bot.answer_callback_query(call.id, text='Вы выполнили все дела на сегодня', show_alert=True)
