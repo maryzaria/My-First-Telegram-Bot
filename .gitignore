@@ -2,3 +2,4 @@
 __pycache__/
 .idea/
 test/ 
+py_log.log
