@@ -3,3 +3,5 @@ __pycache__/
 .idea/
 test/ 
 py_log.log
+env/
+user_db.sql
