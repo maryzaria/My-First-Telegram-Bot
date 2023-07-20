@@ -120,28 +120,28 @@ def show_all(message):
 
 @bot.message_handler(commands=['remove'])
 def remove(message):
-    task = message_to_task(message.text.strip('/remove'))
-    try:
+    task = message.text.strip('/remove')
+    if req.select_task(message, task):
         req.delete_task(message, task)
         text = f'Задача "{task}" удалена'
         logging.info(f'REMOVE: user {message.chat.id} remove task "{task}"')
-    except Exception as err:
+    else:
         text = f'Задача "{task}" не найдена'
-        logging.error(f'REMOVE: user {message.chat.id}, task "{task}" not found, error: {err}')
+        logging.error(f'REMOVE: user {message.chat.id}, task "{task}" not found')
     bot.send_message(message.chat.id, text)
 
 
 @bot.message_handler(commands=['move'])
 def move(message):
-    task, dt = message_to_task(message.text.stpip('/move')), valid_date(message.text)
-    try:
+    task, dt = message_to_task(message.text.strip('/move')), valid_date(message.text)
+    if req.select_task(message, task):
         req.delete_task(message, task)
         req.insert_task_db(message, task=task, date=dt)
         text = f'Задача "{task}" перемещена на {dt}'
         logging.info(f'MOVE: user {message.chat.id} move task "{task}" to date {dt}')
-    except Exception:
+    else:
         text = f'Задача "{task}" не найдена'
-        logging.error(f'MOVE: user {message.chat.id}, task "{task}" not found, error: {err}')
+        logging.error(f'MOVE: user {message.chat.id}, task "{task}" not found')
     bot.send_message(message.chat.id, text)
 
 

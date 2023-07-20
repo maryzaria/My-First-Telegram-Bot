@@ -96,6 +96,16 @@ class SQLRequests:
         self.__close()
         return tasks
 
+    def select_task(self, message, task):
+        self.__start()
+        self.cur.execute("""
+        SELECT id FROM task 
+        WHERE chat_id = ? AND content = ?;
+        """, (message.chat.id, task))
+        task_id = self.cur.fetchone()
+        self.__close()
+        return task_id
+
     def select_n(self, message):
         self.__start()
         self.cur.execute("""
