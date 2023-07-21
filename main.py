@@ -167,6 +167,7 @@ def shop(message):  # types.Message
 @bot.message_handler(commands=['today'])
 def todo_today(message):
     tasks_today = [task[0] for task in req.select_today(message, date.strftime(date.today(), '%d.%m.%Y'))]
+    print(tasks_today)
     if tasks_today:
         bot.send_message(message.chat.id, 'Список дел на сегодня:', reply_markup=make_buttons(tasks_today))
     else:
