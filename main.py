@@ -95,7 +95,7 @@ def bot_message(message):
             bot.send_message(message.chat.id, 'напишите задачу и дату, когда ее надо выполнить')
             bot.register_next_step_handler(message, add)
         if message.text == 'Дела на сегодня':
-            today(message)
+            todo_today(message)
         if message.text == 'Все задачи':
             show_all(message)
         if message.text == 'Удалить задачу':
@@ -165,7 +165,7 @@ def shop(message):  # types.Message
 
 
 @bot.message_handler(commands=['today'])
-def today(message):
+def todo_today(message):
     tasks_today = [task[0] for task in req.select_today(message, date.strftime(date.today(), '%d.%m.%Y'))]
     if tasks_today:
         bot.send_message(message.chat.id, 'Список дел на сегодня:', reply_markup=make_buttons(tasks_today))
