@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
@@ -53,7 +54,8 @@ def start(message):
 @bot.message_handler(commands=['add'])
 def add(message):
     req.create_db(message)
-    dt, task = valid_date(message.text), message_to_task(message.text.strip('/add'))
+    dt, task = valid_date(message.text), message_to_task(re.sub(r"/add", '', message.text))
+    task = '.' if not task else task[0:32]
     if 'вместе с задачей' in dt:
         n = req.select_n(message)
         if n <= 2:
@@ -120,7 +122,7 @@ def show_all(message):
 
 @bot.message_handler(commands=['remove'])
 def remove(message):
-    task = message.text.strip('/remove')
+    task = re.sub(r'/remove', '', message.text)
     if req.select_task(message, task):
         req.delete_task(message, task)
         text = f'Задача "{task}" удалена'
@@ -133,7 +135,7 @@ def remove(message):
 
 @bot.message_handler(commands=['move'])
 def move(message):
-    task, dt = message_to_task(message.text.strip('/move')), valid_date(message.text)
+    task, dt = message_to_task(re.sub(r'/move', '', message.text)), valid_date(message.text)
     if req.select_task(message, task):
         req.delete_task(message, task)
         req.insert_task_db(message, task=task, date=dt)
@@ -155,9 +157,12 @@ def make_buttons(data: list):
 
 @bot.message_handler(commands=['shop'])
 def shop(message):  # types.Message
-    items = message.text.strip('/shop').strip(' ,.!-?/*').split(", ") if ',' in message.text \
-        else message.text.strip('/shop').strip(' ,.!-?/*').split()
+    items = re.sub(r'/shop', '', message.text).strip(' ,.!-?/*').split(", ") if ',' in message.text \
+        else re.sub(r'/shop', '', message.text).strip(' ,.!-?/*').split()
+    items = [item[:28] for item in items]
+    print(items)
     req.create_db(message, shop=True)
+
     for item in items:
         req.insert_task_db(message, shop=True, item_name=item)
     bot.send_message(message.chat.id, 'Список покупок', reply_markup=make_buttons(items))
@@ -166,7 +171,7 @@ def shop(message):  # types.Message
 
 @bot.message_handler(commands=['today'])
 def todo_today(message):
-    tasks_today = [task[0] for task in req.select_today(message, date.strftime(date.today(), '%d.%m.%Y'))]
+    tasks_today = [task[0][:33] for task in req.select_today(message, date.strftime(date.today(), '%d.%m.%Y'))]
     print(tasks_today)
     if tasks_today:
         bot.send_message(message.chat.id, 'Список дел на сегодня:', reply_markup=make_buttons(tasks_today))

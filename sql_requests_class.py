@@ -12,6 +12,7 @@ class SQLRequests:
         self.conn.close()
 
     def __drop_table(self):
+        self.__start()
         self.cur.execute("""
         DROP TABLE user;
         """)
@@ -21,6 +22,7 @@ class SQLRequests:
         self.cur.execute("""
         DROP TABLE shop;
         """)
+        self.__close()
 
     def create_db(self, message, shop=True):
         # self.__drop_table()
