@@ -78,7 +78,7 @@ def show(message):
     try:
         dt = valid_date(message.text.split()[1].lower())
         text = 'На эту дату нет задач'
-        res = [task[0] for task in req.select_today(message, dt)]
+        res = [task[0] for task in req.select_today(message, dt, task=True)]
         if res:
             text = '\n'.join([f"🔹{v}" for v in res])
         bot.send_message(message.chat.id, text)
@@ -109,7 +109,7 @@ def bot_message(message):
 def show_all(message):
     tasks = {}
     for dt, task in sorted(req.select_all(message), key=lambda x: datetime.strptime(x[0], '%d.%m.%Y')):
-        if datetime.strptime(dt, '%d.%m.%Y') < datetime.today() - timedelta(days=1):
+        if datetime.strptime(dt, '%d.%m.%Y') < datetime.today() - timedelta(days=365):
             req.delete_task(message, task)
         else:
             tasks.setdefault(dt, []).append(task)
@@ -160,19 +160,17 @@ def shop(message):  # types.Message
     items = re.sub(r'/shop', '', message.text).strip(' ,.!-?/*').split(", ") if ',' in message.text \
         else re.sub(r'/shop', '', message.text).strip(' ,.!-?/*').split()
     items = [item[:28] for item in items]
-    print(items)
     req.create_db(message, shop=True)
-
+    req.delete_items(message, review=True)
     for item in items:
-        req.insert_task_db(message, shop=True, item_name=item)
+        req.insert_task_db(message, shop=True, item_name=item, date=date.today().strftime('%d.%m.%Y'))
     bot.send_message(message.chat.id, 'Список покупок', reply_markup=make_buttons(items))
     logging.info(f'the user {message.chat.id} made a shopping list')
 
 
 @bot.message_handler(commands=['today'])
 def todo_today(message):
-    tasks_today = [task[0][:33] for task in req.select_today(message, date.strftime(date.today(), '%d.%m.%Y'))]
-    print(tasks_today)
+    tasks_today = [task[0][:33] for task in req.select_today(message, date.strftime(date.today(), '%d.%m.%Y'), task=True)]
     if tasks_today:
         bot.send_message(message.chat.id, 'Список дел на сегодня:', reply_markup=make_buttons(tasks_today))
     else:
@@ -197,7 +195,7 @@ def answer(call):  # : types.callback_query
     elif call.message.text == 'Список дел на сегодня:':
         istoday = date.strftime(date.today(), '%d.%m.%Y')
         req.update_tasks(call.message, call.data, istoday)
-        today_tasks = [task[0] for task in req.select_today(call.message, istoday)]
+        today_tasks = [task[0] for task in req.select_today(call.message, istoday, task=True)]
         replay = make_buttons(today_tasks)
         if len(today_tasks) != 0 and len(tuple(filter(lambda x: '✅' in x, today_tasks))) == len(today_tasks):
             bot.answer_callback_query(call.id, text='Вы выполнили все дела на сегодня', show_alert=True)

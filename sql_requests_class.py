@@ -13,19 +13,19 @@ class SQLRequests:
 
     def __drop_table(self):
         self.__start()
-        self.cur.execute("""
-        DROP TABLE user;
-        """)
-        self.cur.execute("""
-        DROP TABLE task;
-        """)
+        # self.cur.execute("""
+        # DROP TABLE user;
+        # """)
+        # self.cur.execute("""
+        # DROP TABLE task;
+        # """)
         self.cur.execute("""
         DROP TABLE shop;
         """)
         self.__close()
 
     def create_db(self, message, shop=True):
-        # self.__drop_table()
+        self.__drop_table()
         self.__start()
         self.cur.execute("""
         CREATE TABLE IF NOT EXISTS user (
@@ -72,9 +72,9 @@ class SQLRequests:
             """, (item_name, message.chat.id))
         self.__close()
 
-    def select_today(self, message, date=None, shop=False):
+    def select_today(self, message, date=None, task=False, shop=False):
         self.__start()
-        if date:
+        if task:
             self.cur.execute("""
             SELECT content FROM task 
             WHERE date = ? AND chat_id = ?;
@@ -170,12 +170,17 @@ class SQLRequests:
                 """, (t, message.chat.id))
         self.__close()
 
-    def delete_items(self, message, items):
+    def delete_items(self, message, items=(), review=False):
         self.__start()
-        for item in items:
+        if review:
             self.cur.execute("""
-            DELETE FROM shop WHERE item_name = ? AND chat_id = ?;
-            """, (item, message.chat.id))
+            DELETE FROM shop WHERE chat_id = ?;
+            """, (message.chat.id,))
+        else:
+            for item in items:
+                self.cur.execute("""
+                DELETE FROM shop WHERE item_name = ? AND chat_id = ?;
+                """, (item, message.chat.id))
         self.__close()
 
 
